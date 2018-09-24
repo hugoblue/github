@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xsi:schemaLocation="http://www.springframework.org/schema/batch http://www.springframework.org/schema/batch/spring-batch-3.0.xsd
+                        http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
+		                http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+<!--<import resource="batch-base.xml"/>-->
+    <bean id="jobLauncher"
+          class="org.springframework.batch.core.launch.support.SimpleJobLauncher">
+        <property name="jobRepository" ref="jobRepository"/>
+    </bean>
+
+    <bean id="jobRepository"
+          class="org.springframework.batch.core.repository.support.MapJobRepositoryFactoryBean">
+    </bean>
+
+    <!--&lt;!&ndash; 与上面的配置等价，下面的更容易理解 &ndash;&gt;-->
+    <bean class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+        <property
+                name="locations"> <!-- PropertyPlaceholderConfigurer类中有个locations属性，接收的是一个数组，即我们可以在下面配好多个properties文件 -->
+            <array>
+                <value>classpath:batch/batch-customJob.properties</value>
+            </array>
+        </property>
+    </bean>
+
+    <context:component-scan base-package="com.ehouse.batch"/>
+
+    <bean id="sampleIncrementer"
+               class="org.springframework.batch.core.launch.support.RunIdIncrementer"/>
+
+    <!-- Job Example 1 -->
+    <job id="customJob" incrementer="sampleIncrementer" restartable="true" xmlns="http://www.springframework.org/schema/batch" >
+        <step id="orderInfoStep1" next="orderInfoStep2">
+            <tasklet ref="customTasklet"/>
+            <listeners>
+                <listener ref="stepListener"></listener>
+            </listeners>
+        </step>
+        <step id="orderInfoStep2">
+            <tasklet>
+                <chunk reader="customItemReader" processor="customItemProcessor" writer="customItemWriter"
+                       commit-interval="3" >
+
+                </chunk>
+                <listeners>
+                    <!--<listener ref="readListener"></listener>-->
+                    <!--<listener ref="processListener"></listener>-->
+                    <!--<listener ref="writeListener"></listener>-->
+                    <listener ref="skipListener"></listener>
+                    <!--<listener ref="chunkListener"></listener>-->
+                    <!--<listener ref="cusRetryListener" ></listener>-->
+                </listeners>
+                <transaction-attributes isolation="READ_COMMITTED" propagation="NOT_SUPPORTED" timeout="300"/>
+                <no-rollback-exception-classes>
+                    <include class="java.lang.Exception"/>
+                </no-rollback-exception-classes>
+            </tasklet>
+            <listeners>
+                <listener ref="stepListener"></listener>
+            </listeners>
+        </step>
+        <listeners>
+            <listener ref="jobListener"></listener>
+        </listeners>
+    </job>
+
+    <!--&lt;!&ndash; Job Example 1 &ndash;&gt;-->
+    <!--<job id="orderInfoJob" xmlns="http://www.springframework.org/schema/batch">-->
+
+    <!--<step id="orderInfoStep1" next="orderInfoStep2">-->
+    <!--<tasklet ref="cleanTasklet" />-->
+    <!--</step>-->
+
+    <!--<step id="announceStep" next="processFile">-->
+    <!--<tasklet ref="announce" method="announce" />-->
+    <!--</step>-->
+
+    <!--<step id="processFile">-->
+    <!--<tasklet transaction-manager="transactionManager" task-executor="taskExecutor">-->
+    <!--<chunk reader="userFileItemReader" writer="itemWriter" commit-interval="1"/>-->
+    <!--</tasklet>-->
+    <!--</step>-->
+    <!--</job>-->
+
+    <!--&lt;!&ndash; Tasklet &ndash;&gt;-->
+    <!--<bean id="cleanTasklet" class="fr.infinit.demo.springbatch.batch.CleanTasklet" />-->
+
+    <!--&lt;!&ndash; ItemReader &ndash;&gt;-->
+    <!--<bean id="userFileItemReader" class="org.springframework.batch.item.file.FlatFileItemReader">-->
+    <!--<property name="resource" value="classpath:input.txt" />-->
+    <!--<property name="lineMapper">-->
+    <!--<bean class="org.springframework.batch.item.file.mapping.DefaultLineMapper">-->
+    <!--<property name="lineTokenizer">-->
+    <!--<bean class="org.springframework.batch.item.file.transform.DelimitedLineTokenizer">-->
+    <!--<property name="names" value="ID,firstName,lastName,birthday" />-->
+    <!--</bean>-->
+    <!--</property>-->
+    <!--<property name="fieldSetMapper">-->
+    <!--<bean class="fr.infinit.demo.springbatch.batch.UserFieldMapper" />-->
+    <!--</property>-->
+    <!--</bean>-->
+    <!--</property>-->
+    <!--</bean>-->
+
+    <!--&lt;!&ndash; ItemWriter &ndash;&gt;-->
+    <!--<bean id="itemWriter" class="org.springframework.batch.item.file.FlatFileItemWriter">-->
+    <!--<property name="resource" value="file:/Users/mudak/dev/workspace/SpringBatch/output.txt" />-->
+    <!--<property name="lineAggregator">-->
+    <!--<bean class="org.springframework.batch.item.file.transform.DelimitedLineAggregator">-->
+    <!--<property name="delimiter" value="|"/>-->
+    <!--<property name="fieldExtractor">-->
+    <!--<bean class="org.springframework.batch.item.file.transform.BeanWrapperFieldExtractor">-->
+    <!--<property name="names" value="firstName"/>-->
+    <!--</bean>-->
+    <!--</property>-->
+    <!--</bean>-->
+    <!--</property>-->
+    <!--</bean>-->
+
+    <!--&lt;!&ndash; TaskExecutor &ndash;&gt;-->
+    <!--<bean id="taskExecutor" class="org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor">-->
+    <!--<property name="maxPoolSize" value="1" />-->
+    <!--<property name="corePoolSize" value="1" />-->
+    <!--</bean>-->
+
+</beans>
